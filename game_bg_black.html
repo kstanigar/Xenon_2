@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Top-Scrolling Flying Game</title>
+    <style>
+      canvas {
+        border: 1px solid white;
+        display: block;
+        margin: 0 auto;
+        background-color: black; /* Set the background color to black */
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="score">Score: 0</div>
+    <div id="gameOver" style="display: none">Game Over!</div>
+    <button onclick="startGame()">Start Game</button>
+    <!-- Add a Start Game button -->
+    <script>
+      var canvas = document.getElementById("gameCanvas");
+      var ctx = canvas.getContext("2d");
+
+      var playerImg = new Image();
+      playerImg.src = "/Xenon/player.png";
+
+      var enemyImg = new Image();
+      enemyImg.src = "/Xenon/enemy.png";
+
+      var player = {
+        x: canvas.width / 2,
+        y: canvas.height - 30,
+        width: 50,
+        height: 50,
+        speed: 5,
+      };
+
+      var playerBullets = [];
+      var enemyBullets = [];
+      var enemies = [];
+      var score = 0;
+      var gameOver = false;
+
+      function createEnemy() {
+        var enemy = {
+          x: Math.random() * (canvas.width - 50),
+          y: 0,
+          width: 50,
+          height: 50,
+          speed: Math.random() * 2 + 2,
+        };
+        enemies.push(enemy);
+      }
+
+      var rightPressed = false;
+      var leftPressed = false;
+
+      document.addEventListener("keydown", keyDownHandler, false);
+      document.addEventListener("keyup", keyUpHandler, false);
+
+      function keyDownHandler(e) {
+        if (e.key == "Right" || e.key == "ArrowRight") {
+          rightPressed = true;
+        } else if (e.key == "Left" || e.key == "ArrowLeft") {
+          leftPressed = true;
+        } else if (e.key == " ") {
+          shootBullet();
+        }
+      }
+
+      function keyUpHandler(e) {
+        if (e.key == "Right" || e.key == "ArrowRight") {
+          rightPressed = false;
+        } else if (e.key == "Left" || e.key == "ArrowLeft") {
+          leftPressed = false;
+        }
+      }
+
+      function shootBullet() {
+        var bullet = {
+          x: player.x + player.width / 2 - 2.5,
+          y: player.y,
+          width: 5,
+          height: 10,
+          speed: 8,
+        };
+        playerBullets.push(bullet);
+      }
+
+      function shootEnemyBullet(enemy) {
+        var bullet = {
+          x: enemy.x + enemy.width / 2 - 2.5,
+          y: enemy.y + enemy.height,
+          width: 5,
+          height: 10,
+          speed: 4,
+        };
+        enemyBullets.push(bullet);
+      }
+
+      function draw() {
+        if (!gameOver) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          ctx.drawImage(
+            playerImg,
+            player.x,
+            player.y,
+            player.width,
+            player.height
+          );
+
+          if (rightPressed && player.x < canvas.width - player.width) {
+            player.x += player.speed;
+          } else if (leftPressed && player.x > 0) {
+            player.x -= player.speed;
+          }
+
+          for (var i = 0; i < playerBullets.length; i++) {
+            ctx.fillStyle = "#00FF00";
+            ctx.fillRect(
+              playerBullets[i].x,
+              playerBullets[i].y,
+              playerBullets[i].width,
+              playerBullets[i].height
+            );
+
+            playerBullets[i].y -= playerBullets[i].speed;
+
+            if (playerBullets[i].y < 0) {
+              playerBullets.splice(i, 1);
+              continue;
+            }
+
+            for (var j = 0; j < enemies.length; j++) {
+              if (
+                playerBullets[i].x < enemies[j].x + enemies[j].width &&
+                playerBullets[i].x + playerBullets[i].width > enemies[j].x &&
+                playerBullets[i].y < enemies[j].y + enemies[j].height &&
+                playerBullets[i].y + playerBullets[i].height > enemies[j].y
+              ) {
+                playerBullets.splice(i, 1);
+                enemies.splice(j, 1);
+                i--;
+                score += 10;
+                document.getElementById("score").innerText = "Score: " + score;
+                break;
+              }
+            }
+          }
+
+          for (var i = 0; i < enemyBullets.length; i++) {
+            ctx.fillStyle = "#FF0000";
+            ctx.fillRect(
+              enemyBullets[i].x,
+              enemyBullets[i].y,
+              enemyBullets[i].width,
+              enemyBullets[i].height
+            );
+
+            enemyBullets[i].y += enemyBullets[i].speed;
+
+            if (enemyBullets[i].y > canvas.height) {
+              enemyBullets.splice(i, 1);
+              continue;
+            }
+
+            if (
+              enemyBullets[i].x < player.x + player.width &&
+              enemyBullets[i].x + enemyBullets[i].width > player.x &&
+              enemyBullets[i].y < player.y + player.height &&
+              enemyBullets[i].y + enemyBullets[i].height > player.y
+            ) {
+              gameOver = true;
+              document.getElementById("gameOver").style.display = "block";
+              break;
+            }
+          }
+
+          for (var i = 0; i < enemies.length; i++) {
+            ctx.drawImage(
+              enemyImg,
+              enemies[i].x,
+              enemies[i].y,
+              enemies[i].width,
+              enemies[i].height
+            );
+
+            enemies[i].y += enemies[i].speed;
+
+            if (
+              player.x < enemies[i].x + enemies[i].width &&
+              player.x + player.width > enemies[i].x &&
+              player.y < enemies[i].y + enemies[i].height &&
+              player.y + player.height > enemies[i].y
+            ) {
+              gameOver = true;
+              document.getElementById("gameOver").style.display = "block";
+              break;
+            }
+
+            if (enemies[i].y > canvas.height) {
+              enemies.splice(i, 1);
+              i--;
+              endGame();
+            }
+
+            if (Math.random() < 0.005) {
+              shootEnemyBullet(enemies[i]);
+            }
+          }
+
+          if (Math.random() < 0.01) {
+            createEnemy();
+          }
+
+          requestAnimationFrame(draw);
+        }
+      }
+
+      function startGame() {
+        gameOver = false;
+        score = 0;
+        playerBullets = [];
+        enemyBullets = [];
+        enemies = [];
+        player.x = canvas.width / 2;
+        document.getElementById("score").innerText = "Score: " + score;
+        document.getElementById("gameOver").style.display = "none";
+        draw();
+      }
+
+      function endGame() {
+        gameOver = true;
+        document.getElementById("gameOver").style.display = "block";
+      }
+    </script>
+  </body>
+</html>

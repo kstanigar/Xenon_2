@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Top-Scrolling Flying Game</title>
+    <style>
+      canvas {
+        border: 1px solid black;
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="score">Score: 0</div>
+    <script>
+      // Get the canvas element
+      var canvas = document.getElementById("gameCanvas");
+      var ctx = canvas.getContext("2d");
+
+      // Player object
+      var player = {
+        x: canvas.width / 2,
+        y: canvas.height - 30,
+        width: 50,
+        height: 50,
+        speed: 5,
+      };
+
+      // Bullets array
+      var bullets = [];
+
+      // Enemy objects
+      var enemies = [];
+
+      // Score
+      var score = 0;
+
+      function createEnemy() {
+        var enemy = {
+          x: Math.random() * (canvas.width - 50),
+          y: 0,
+          width: 50,
+          height: 50,
+          speed: Math.random() * 2 + 2, // Random speed between 2 and 4
+        };
+        enemies.push(enemy);
+      }
+
+      // Keyboard event listeners
+      var rightPressed = false;
+      var leftPressed = false;
+
+      document.addEventListener("keydown", keyDownHandler, false);
+      document.addEventListener("keyup", keyUpHandler, false);
+
+      function keyDownHandler(e) {
+        if (e.key == "Right" || e.key == "ArrowRight") {
+          rightPressed = true;
+        } else if (e.key == "Left" || e.key == "ArrowLeft") {
+          leftPressed = true;
+        } else if (e.key == " ") {
+          // Use " " for space key
+          shootBullet();
+        }
+      }
+
+      function keyUpHandler(e) {
+        if (e.key == "Right" || e.key == "ArrowRight") {
+          rightPressed = false;
+        } else if (e.key == "Left" || e.key == "ArrowLeft") {
+          leftPressed = false;
+        }
+      }
+
+      // Shoot bullet
+      function shootBullet() {
+        var bullet = {
+          x: player.x + player.width / 2 - 2.5, // Bullet starts from the middle of the player
+          y: player.y,
+          width: 5,
+          height: 10,
+          speed: 8,
+        };
+        bullets.push(bullet);
+      }
+
+      // Main game loop
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw player
+        ctx.fillStyle = "#0095DD";
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+
+        // Move player
+        if (rightPressed && player.x < canvas.width - player.width) {
+          player.x += player.speed;
+        } else if (leftPressed && player.x > 0) {
+          player.x -= player.speed;
+        }
+
+        // Draw and move bullets
+        for (var i = 0; i < bullets.length; i++) {
+          ctx.fillStyle = "#00FF00";
+          ctx.fillRect(
+            bullets[i].x,
+            bullets[i].y,
+            bullets[i].width,
+            bullets[i].height
+          );
+
+          bullets[i].y -= bullets[i].speed;
+
+          // Remove bullets that have reached the top of the screen
+          if (bullets[i].y < 0) {
+            bullets.splice(i, 1);
+            continue;
+          }
+
+          // Check for collisions with enemies
+          for (var j = 0; j < enemies.length; j++) {
+            if (
+              bullets[i].x < enemies[j].x + enemies[j].width &&
+              bullets[i].x + bullets[i].width > enemies[j].x &&
+              bullets[i].y < enemies[j].y + enemies[j].height &&
+              bullets[i].y + bullets[i].height > enemies[j].y
+            ) {
+              // Collision detected, remove bullet and enemy
+              bullets.splice(i, 1);
+              enemies.splice(j, 1);
+              // Decrement i to handle the removed bullet
+              i--;
+              // Increment score
+              score += 10;
+              document.getElementById("score").innerText = "Score: " + score;
+              break; // Exit the inner loop since the bullet can only collide with one enemy
+            }
+          }
+        }
+
+        // Draw and move enemies
+        for (var i = 0; i < enemies.length; i++) {
+          ctx.fillStyle = "#FF0000";
+          ctx.fillRect(
+            enemies[i].x,
+            enemies[i].y,
+            enemies[i].width,
+            enemies[i].height
+          );
+
+          enemies[i].y += enemies[i].speed;
+
+          // Remove enemies that have reached the bottom of the screen
+          if (enemies[i].y > canvas.height) {
+            enemies.splice(i, 1);
+          }
+        }
+
+        // Create new enemies randomly
+        if (Math.random() < 0.01) {
+          createEnemy();
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      draw();
+    </script>
+  </body>
+</html>
